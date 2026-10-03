@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Presente: карточки</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Layout: одна колонка, одна задача на экране; цвет = группа глагола, основа отделена от окончания */
+  :root {
+    --bg: #FAF6E4;
+    --card: #FFFFFF;
+    --ink: #1F2633;
+    --muted: #5B6475;
+    --line: #D9D3BC;
+    --soft: #F3EDD6;
+    --ar: #1F2633; --ar-bg: #F3EDD6;
+    --er: #1F2633; --er-bg: #F3EDD6;
+    --ir: #1F2633; --ir-bg: #F3EDD6;
+    --ok: #1F2633;
+    --again: #1F2633;
+    --focus: #1F2633;
+    --font: "Lexend", "Atkinson Hyperlegible", Verdana, Tahoma, sans-serif;
+    --scale: 1;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; font-weight: 500; background: var(--bg); color: var(--ink);
+    font-family: var(--font); font-size: calc(18px * var(--scale));
+    line-height: 1.6; letter-spacing: .02em; word-spacing: .08em;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 64px; }
+  button { font: inherit; letter-spacing: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  h1 { margin: 0; font-size: 1.6em; font-weight: 700; line-height: 1.2; text-wrap: balance; }
+  h1 small { display: block; font-size: .5em; font-weight: 400; color: var(--muted); }
+  .size { display: flex; gap: 6px; }
+  .size button { border: 2px solid var(--line); background: var(--card); border-radius: 10px; padding: 4px 12px; font-weight: 600; }
+
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .tab { border: 2px solid var(--line); background: var(--card); border-radius: 12px; padding: 10px 16px; font-weight: 600; }
+  .tab[aria-selected="true"] { background: var(--ink); color: var(--card); border-color: var(--ink); }
+
+  .panel { display: grid; gap: 16px; }
+  .panel > * { min-width: 0; }
+  .box { background: var(--card); border: 2px solid var(--line); border-radius: 18px; padding: 20px; }
+
+  /* цветные части слова */
+  .stem { color: var(--ink); }
+  .end { font-weight: 800; text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 4px; }
+  .end { color: var(--ink); background: none; }
+  .sep { color: var(--muted); font-weight: 400; padding: 0 .08em; }
+  .inf-end { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 2px; }
+
+
+  .g-ar { --g: var(--ar); --gbg: var(--ar-bg); }
+  .g-er { --g: var(--er); --gbg: var(--er-bg); }
+  .g-ir { --g: var(--ir); --gbg: var(--ir-bg); }
+  .pic { width: 120px; height: 120px; display: grid; place-items: center; background: var(--gbg); border-radius: 24px; }
+  .pic svg { width: 78%; height: 78%; fill: none; stroke: var(--ink); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+  .pic svg .f { fill: var(--card); }
+  .pic svg .t { fill: var(--ink); stroke: none; font-family: var(--font); font-weight: 700; }
+  .pic.sm { width: 76px; height: 76px; border-radius: 18px; }
+  .row { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .vcard { border: 2px solid var(--line); background: var(--card); border-radius: 18px; padding: 14px 10px; display: grid; justify-items: center; gap: 6px; text-align: center; }
+  .vcard[aria-pressed="true"] { border-color: var(--g); box-shadow: 0 0 0 3px var(--gbg); }
+  .vcard b { font-size: 1.1em; }
+  .vcard span { color: var(--muted); font-size: .85em; }
+  .conj { display: grid; gap: 8px; }
+  .conj-head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .conj-head h2 { margin: 0; font-size: 1.6em; }
+  .conj-head p { margin: 0; color: var(--muted); }
+  .conj-list { display: grid; gap: 8px; }
+  .conj-item { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto; gap: 12px; align-items: center; background: var(--bg); border-radius: 12px; padding: 8px 12px; }
+  .conj-item .who b { display: block; }
+  .conj-item .who span { color: var(--muted); font-size: .8em; }
+  .conj-item .form { font-size: 1.4em; font-weight: 500; }
+  .speak.sm { width: 40px; height: 40px; }
+  .speak.sm svg { width: 20px; height: 20px; }
+  .btn svg { width: 20px; height: 20px; vertical-align: -4px; margin-right: 6px; }
+
+  /* фильтры */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { border: 2px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 14px; font-weight: 600; }
+  .chip[aria-pressed="true"].c-ar { background: var(--ar-bg); border-color: var(--ar); color: var(--ar); }
+  .chip[aria-pressed="true"].c-er { background: var(--er-bg); border-color: var(--er); color: var(--er); }
+  .chip[aria-pressed="true"].c-ir { background: var(--ir-bg); border-color: var(--ir); color: var(--ir); }
+  .chip[aria-pressed="true"].c-plain { background: var(--soft); border-color: var(--ink); }
+  .chip[aria-pressed="false"] { color: var(--muted); }
+  .filters .spacer { flex: 1; }
+  .btn { border: 2px solid var(--ink); background: var(--ink); color: var(--card); border-radius: 12px; padding: 10px 18px; font-weight: 600; }
+  .btn.ghost { background: var(--card); color: var(--ink); }
+
+  .progress { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: .9em; font-variant-numeric: tabular-nums; }
+  .bar { flex: 1; height: 10px; background: var(--soft); border-radius: 99px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .3s; }
+
+  /* карточка */
+  .flash { min-height: 330px; display: grid; place-items: center; text-align: center; gap: 14px; position: relative; }
+  .flash.g-ar { border-color: var(--ar); }
+  .flash.g-er { border-color: var(--er); }
+  .flash.g-ir { border-color: var(--ir); }
+  .person { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; }
+  .person b { font-size: 1.5em; }
+  .person span { color: var(--muted); font-size: .85em; }
+  .verb { font-size: 2.2em; font-weight: 500; line-height: 1.2; }
+  .meaning { color: var(--muted); }
+  .answer { font-size: 3em; font-weight: 600; line-height: 1.15; }
+  .rule { display: inline-block; background: var(--soft); border-radius: 10px; padding: 6px 12px; font-size: .9em; }
+  .face { display: grid; gap: 14px; justify-items: center; }
+  .face[hidden] { display: none !important; }
+  .speak { border: 2px solid var(--line); background: var(--card); border-radius: 999px; width: 48px; height: 48px; display: inline-grid; place-items: center; }
+  .speak svg { width: 24px; height: 24px; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .actions button { border-radius: 14px; padding: 14px; font-weight: 600; font-size: 1.05em; border: 2px solid; }
+  .b-again { background: var(--card); color: var(--again); border-color: var(--again) !important; }
+  .b-know { background: var(--ok); color: var(--card); border-color: var(--ok) !important; }
+  .b-show { grid-column: 1 / -1; background: var(--ink); color: var(--card); border-color: var(--ink) !important; }
+  .keys { color: var(--muted); font-size: .8em; text-align: center; }
+  kbd { font-family: var(--font); border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 6px; padding: 0 6px; background: var(--card); }
+
+  /* собери слово */
+  .slot { display: inline-block; min-width: 2.4em; border-bottom: 4px dashed var(--muted); color: var(--muted); }
+  .slot.filled { border-bottom-style: solid; }
+  .endings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 460px; }
+  .endings button { border: 2px solid var(--line); background: var(--card); border-radius: 14px; padding: 12px 6px; font-size: 1.3em; font-weight: 700; }
+  .endings button.right { border-color: var(--ink); border-width: 4px; background: var(--soft); }
+  .endings button.wrong { border-style: dashed; opacity: .45; }
+  .feedback { min-height: 1.6em; font-weight: 600; }
+  .feedback.ok { color: var(--ok); }
+  .feedback.no { color: var(--again); }
+  @keyframes nudge { 0%,100% { transform: translateX(0); } 30% { transform: translateX(-6px); } 60% { transform: translateX(6px); } }
+  .nudge { animation: nudge .3s; }
+
+  /* схема */
+  .scroll { overflow-x: auto; }
+  table { border-collapse: separate; border-spacing: 0 6px; width: 100%; min-width: 520px; }
+  th, td { padding: 10px 12px; text-align: left; }
+  thead th { font-size: .95em; }
+  thead th .end { font-size: 1.1em; }
+  tbody td { background: var(--card); border-top: 2px solid var(--line); border-bottom: 2px solid var(--line); font-size: 1.15em; }
+  tbody td:first-child { border-left: 2px solid var(--line); border-radius: 12px 0 0 12px; font-size: 1em; }
+  tbody td:last-child { border-right: 2px solid var(--line); border-radius: 0 12px 12px 0; }
+  td .ru { display: block; color: var(--muted); font-size: .8em; }
+  td.cell { cursor: pointer; }
+  td.cell:hover { background: var(--soft); }
+  td.diff { box-shadow: inset 0 0 0 3px var(--ink); }
+  .st { font-style: normal; font-weight: 800; color: var(--ink); }
+  .legend { color: var(--muted); font-size: .9em; margin: 8px 0 0; }
+  .tips { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .tip { background: var(--card); border: 2px solid var(--line); border-radius: 16px; padding: 16px; }
+  .tip h3 { margin: 0 0 6px; font-size: 1em; }
+  .tip p { margin: 0; }
+  .steps { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 1.4em; font-weight: 500; }
+  .steps .arrow { color: var(--muted); }
+  h2 { font-size: 1.2em; margin: 0 0 10px; }
+
+  .done { text-align: center; display: grid; gap: 14px; justify-items: center; }
+  .done .big { font-size: 2.4em; font-weight: 700; }
+  .center { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+  @media (max-width: 480px) {
+    .verb { font-size: 1.8em; } .answer { font-size: 2.4em; }
+    .endings button { font-size: 1.1em; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Presente de indicativo <small>правильные глаголы на -ar, -er, -ir</small></h1>
+    <div class="size" aria-label="Размер текста">
+      <button id="smaller" aria-label="Уменьшить текст">A−</button>
+      <button id="bigger" aria-label="Увеличить текст">A+</button>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="scheme" aria-selected="true">1. Схема</button>
+    <button class="tab" role="tab" data-tab="verbs" aria-selected="false">2. 22 глагола</button>
+    <button class="tab" role="tab" data-tab="cards" aria-selected="false">3. Карточки</button>
+    <button class="tab" role="tab" data-tab="build" aria-selected="false">4. Собери слово</button>
+  </div>
+
+  <!-- ГЛАГОЛЫ -->
+  <section class="panel" id="verbs" hidden>
+    <div class="box conj" id="conj"></div>
+    <div class="gallery" id="gallery"></div>
+  </section>
+
+  <!-- СХЕМА -->
+  <section class="panel" id="scheme">
+    <div class="box">
+      <h2>Как это работает: три шага</h2>
+      <div class="steps g-ar">
+        <span>habl<span class="inf-end"><i class="st">a</i>r</span></span>
+        <span class="arrow">→</span>
+        <span>habl–</span>
+        <span class="arrow">→</span>
+        <span><span class="stem">h<i class="st">a</i>bl</span><span class="end">o</span></span>
+      </div>
+      <p class="legend">1) Отрезаем хвост -ar / -er / -ir. 2) Остаётся основа. 3) Добавляем окончание для нужного лица.<br><b class="st">Жирная буква</b> — ударная гласная: на неё падает ударение.</p>
+    </div>
+
+    <div class="box">
+      <h2>Окончания</h2>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th class="g-ar">habl<span class="end"><i class="st">a</i>r</span><span class="ru" style="display:block;font-weight:400;color:var(--muted);font-size:.8em">говорить</span></th>
+              <th class="g-er">com<span class="end"><i class="st">e</i>r</span><span style="display:block;font-weight:400;color:var(--muted);font-size:.8em">есть</span></th>
+              <th class="g-ir">viv<span class="end"><i class="st">i</i>r</span><span style="display:block;font-weight:400;color:var(--muted);font-size:.8em">жить</span></th>
+            </tr>
+          </thead>
+          <tbody id="schemeBody"></tbody>
+        </table>
+      </div>
+      <p class="legend">Нажмите на форму, чтобы её услышать. Чёрная рамка: здесь -ir отличается от -er.</p>
+    </div>
+
+    <div class="tips">
+      <div class="tip"><h3>yo → всегда -o</h3><p>h<i class="st">a</i>bl<b>o</b>, c<i class="st">o</i>m<b>o</b>, v<i class="st">i</i>v<b>o</b>. Одинаково во всех группах.</p></div>
+      <div class="tip"><h3>Своя буква</h3><p>-ar любит букву <b>a</b>. -er и -ir любят букву <b>e</b>.</p></div>
+      <div class="tip"><h3>tú = él + s</h3><p>h<i class="st">a</i>bla → h<i class="st">a</i>bla<b>s</b><br>c<i class="st">o</i>me → c<i class="st">o</i>me<b>s</b></p></div>
+      <div class="tip"><h3>ellos = él + n</h3><p>h<i class="st">a</i>bla → h<i class="st">a</i>bla<b>n</b><br>v<i class="st">i</i>ve → v<i class="st">i</i>ve<b>n</b></p></div>
+      <div class="tip"><h3>-er и -ir почти близнецы</h3><p>Разница только в «мы» и «вы»: com<b><i class="st">e</i>mos</b> / viv<b><i class="st">i</i>mos</b>, com<b><i class="st">é</i>is</b> / viv<b><i class="st">í</i>s</b>.</p></div>
+      <div class="tip"><h3>nosotros = хвост + mos</h3><p>habl<b><i class="st">a</i></b>r → habl<b><i class="st">a</i></b>mos<br>viv<b><i class="st">i</i></b>r → viv<b><i class="st">i</i></b>mos</p></div>
+    </div>
+  </section>
+
+  <!-- КАРТОЧКИ -->
+  <section class="panel" id="cards" hidden>
+    <div class="filters" data-filters="cards"></div>
+    <div class="progress"><span id="cProg">1 / 12</span><div class="bar"><i id="cBar"></i></div><span id="cKnow">знаю: 0</span></div>
+
+    <div class="box flash" id="cBox">
+      <div class="face" id="cFront">
+        <div class="pic" id="cPic"></div>
+        <div class="person"><b id="cPerson">yo</b><span id="cPersonRu">я</span></div>
+        <div class="row"><div class="verb" id="cVerb"></div><button class="speak sm" id="cSpeakInf" aria-label="Послушать глагол"></button></div>
+        <div class="meaning" id="cMeaning"></div>
+      </div>
+      <div class="face" id="cBack" hidden>
+        <div class="pic sm" id="cPic2"></div>
+        <div class="person"><b id="cPerson2">yo</b><span id="cPersonRu2">я</span></div>
+        <div class="answer" id="cAnswer"></div>
+        <button class="speak" id="cSpeak" aria-label="Послушать"></button>
+        <div class="rule" id="cRule"></div>
+      </div>
+      <div class="done" id="cDone" hidden>
+        <div class="big" id="cDoneScore">10 / 12</div>
+        <div>Колода пройдена!</div>
+        <div class="center">
+          <button class="btn" id="cHard">Повторить трудные</button>
+          <button class="btn ghost" id="cNew">Новая колода</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions" id="cActions">
+      <button class="b-show" id="cShow">Показать ответ</button>
+      <button class="b-again" id="cAgain" hidden>Ещё раз</button>
+      <button class="b-know" id="cKnowBtn" hidden>Знаю</button>
+    </div>
+    <div class="keys"><kbd>Пробел</kbd> показать ответ · <kbd>←</kbd> ещё раз · <kbd>→</kbd> знаю</div>
+  </section>
+
+  <!-- СОБЕРИ СЛОВО -->
+  <section class="panel" id="build" hidden>
+    <div class="filters" data-filters="build"></div>
+    <div class="progress"><span id="bProg">1 / 12</span><div class="bar"><i id="bBar"></i></div><span id="bScore">с первого раза: 0</span></div>
+
+    <div class="box flash" id="bBox">
+      <div class="face" id="bTask">
+        <div class="pic sm" id="bPic"></div>
+        <div class="person"><b id="bPerson">yo</b><span id="bPersonRu">я</span></div>
+        <div class="meaning" id="bMeaning"></div>
+        <div class="answer" id="bWord"></div>
+        <div class="endings" id="bEndings"></div>
+        <div class="feedback" id="bFeedback" aria-live="polite"></div>
+        <button class="btn" id="bNext" hidden>Дальше →</button>
+      </div>
+      <div class="done" id="bDone" hidden>
+        <div class="big" id="bDoneScore">10 / 12</div>
+        <div>С первого раза. Отлично!</div>
+        <button class="btn" id="bNew">Ещё раз</button>
+      </div>
+    </div>
+    <div class="keys">Выберите окончание. Цифры <kbd>1</kbd>–<kbd>6</kbd> тоже работают.</div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const PERSONS = [
+    { es: 'yo', ru: 'я' },
+    { es: 'tú', ru: 'ты' },
+    { es: 'él / ella / usted', ru: 'он · она · Вы' },
+    { es: 'nosotros', ru: 'мы' },
+    { es: 'vosotros', ru: 'вы (в Испании)' },
+    { es: 'ellos / ellas / ustedes', ru: 'они · Вы (мн.)' }
+  ];
+  const END = {
+    ar: ['o', 'as', 'a', 'amos', 'áis', 'an'],
+    er: ['o', 'es', 'e', 'emos', 'éis', 'en'],
+    ir: ['o', 'es', 'e', 'imos', 'ís', 'en']
+  };
+  const VERBS = [
+    ['hablar', 'говорить'], ['trabajar', 'работать'], ['estudiar', 'учиться'], ['escuchar', 'слушать'],
+    ['cantar', 'петь'], ['bailar', 'танцевать'], ['cocinar', 'готовить еду'], ['comprar', 'покупать'], ['mejorar', 'улучшать'],
+    ['comer', 'есть'], ['beber', 'пить'], ['leer', 'читать'], ['correr', 'бегать'], ['barrer', 'подметать'],
+    ['aprender', 'учить, изучать'], ['vender', 'продавать'],
+    ['vivir', 'жить'], ['escribir', 'писать'], ['abrir', 'открывать'], ['recibir', 'получать'],
+    ['subir', 'подниматься'], ['compartir', 'делиться']
+  ];
+  // пиктограммы 64×64: .f — заливка, остальное — линия цвета группы
+  const ICONS = {
+    hablar: '<path class="f" d="M8 10h30a4 4 0 0 1 4 4v14a4 4 0 0 1-4 4H20l-8 7v-7H8a4 4 0 0 1-4-4V14a4 4 0 0 1 4-4z"/><path d="M14 19h20M14 24h12"/><path class="f" d="M48 26h8a4 4 0 0 1 4 4v12a4 4 0 0 1-4 4h-2v7l-7-7H32a4 4 0 0 1-4-4v-8"/><path d="M36 38h16"/>',
+    trabajar: '<rect class="f" x="8" y="20" width="48" height="32" rx="5"/><path d="M24 20v-5a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v5M8 34h48"/><rect x="28" y="31" width="8" height="7" rx="1"/>',
+    estudiar: '<path class="f" d="M16 30v12c0 4 8 8 16 8s16-4 16-8V30"/><path class="f" d="M4 24 32 12l28 12-28 12z"/><path d="M58 25v14"/><circle cx="58" cy="42" r="2.5"/>',
+    escuchar: '<path d="M12 42v-10a20 20 0 0 1 40 0v10"/><rect class="f" x="7" y="38" width="12" height="18" rx="4"/><rect class="f" x="45" y="38" width="12" height="18" rx="4"/>',
+    cantar: '<rect class="f" x="14" y="6" width="16" height="28" rx="8"/><path d="M8 28a14 14 0 0 0 28 0M22 42v12M14 56h16"/><path d="M50 10v24l10-3V7z"/><circle class="f" cx="46" cy="36" r="5"/>',
+    bailar: '<circle class="f" cx="32" cy="9" r="6"/><path d="M32 16v18M32 34l-10 12-4 10M32 34l10 10 2 12M32 22 18 12M32 22l14-10"/><path d="M8 50h4M52 50h4M6 38h3M55 38h3"/>',
+    cocinar: '<path class="f" d="M10 30h44v14a10 10 0 0 1-10 10H20a10 10 0 0 1-10-10z"/><path d="M4 30h56M24 22c-3-4 3-6 0-10M32 22c-3-4 3-6 0-10M40 22c-3-4 3-6 0-10"/>',
+    comprar: '<path class="f" d="M15 18h43l-6 22H20z"/><path d="M4 10h8l8 30h32M24 26h28M22 32h26"/><circle class="f" cx="24" cy="50" r="4"/><circle class="f" cx="48" cy="50" r="4"/>',
+    comer: '<circle class="f" cx="34" cy="36" r="17"/><circle cx="34" cy="36" r="9"/><path d="M6 10v12a3 3 0 0 0 6 0V10M9 22v32M58 10c-5 2-6 10-6 16h6v28"/>',
+    beber: '<path class="f" d="M16 18h32l-4 38H20z"/><path d="M18 30h28M36 18l6-12h8"/>',
+    leer: '<path class="f" d="M32 16c-6-4-16-5-26-4v38c10-1 20 0 26 4 6-4 16-5 26-4V12c-10-1-20 0-26 4z"/><path d="M32 16v38M12 22h13M12 29h13M12 36h9M39 22h13M39 29h13M39 36h9"/>',
+    correr: '<circle class="f" cx="40" cy="9" r="6"/><path d="M38 17 30 34l10 6-2 16M30 34l-8 8-10-2M35 22l-12-2-6 8M36 22l8 8 10-2"/><path d="M4 24h8M2 32h8M6 40h6"/>',
+    aprender: '<path class="f" d="M32 6a16 16 0 0 0-9 29c2 2 3 4 3 7h12c0-3 1-5 3-7A16 16 0 0 0 32 6z"/><path d="M26 48h12M27 54h10M32 34v-10M27 20l5 4 5-4"/><path d="M6 20h4M54 20h4M12 6l3 3M52 6l-3 3"/>',
+    vender: '<path class="f" d="M34 6h22v22L28 56 6 34z"/><circle cx="46" cy="16" r="4"/><text class="t" x="21" y="43" font-size="20" transform="rotate(-45 28 36)">€</text>',
+    vivir: '<path class="f" d="M14 26v28h36V26L32 12z"/><path d="M6 32 32 10l26 22"/><path class="f" d="M27 54V40h10v14"/><rect x="18" y="32" width="7" height="7"/><rect x="39" y="32" width="7" height="7"/>',
+    escribir: '<rect class="f" x="6" y="8" width="34" height="48" rx="3"/><path d="M12 18h22M12 26h22M12 34h14"/><path class="f" d="M54 18l6 6-22 22-9 4 4-9z"/><path d="M50 22l6 6"/>',
+    abrir: '<path d="M14 6h32v52H14z"/><path class="f" d="M14 6l20 6v50l-20-4z"/><circle cx="29" cy="36" r="2.5"/><path d="M52 22l6-4M52 32h8M52 42l6 4"/>',
+    recibir: '<rect class="f" x="8" y="28" width="48" height="28" rx="2"/><rect class="f" x="4" y="20" width="56" height="9" rx="2"/><path d="M32 20v36M32 20c-4-10-16-10-14-2 1 3 8 2 14 2zM32 20c4-10 16-10 14-2-1 3-8 2-14 2z"/>',
+    subir: '<path class="f" d="M4 58h14V46h14V34h14V22h14v36z"/><path d="M8 34 30 12M19 12h11v11"/>',
+    mejorar: '<path class="f" d="M8 46h10v12H8zM24 36h10v22H24zM40 24h10v34H40z"/><path d="M8 30 22 18l8 6 22-18M42 6h10v10"/>',
+    barrer: '<path d="M46 4 30 36"/><path class="f" d="M24 32l14 7-6 12c-6 2-16-2-20-8z"/><path d="M18 46l-4 8M24 49l-3 8M30 50l-1 8"/><circle cx="48" cy="56" r="2"/><circle cx="55" cy="52" r="1.5"/><circle cx="42" cy="58" r="1.5"/>',
+    compartir: '<path class="f" d="M30 33V7a26 26 0 1 0 22.5 13z"/><path class="f" d="M37 28V2a26 26 0 0 1 22.5 13z"/><circle cx="20" cy="30" r="3"/><circle cx="26" cy="46" r="3"/><circle cx="40" cy="42" r="3"/><circle cx="16" cy="44" r="2"/><circle cx="46" cy="12" r="2.5"/>'
+  };
+  const pic = v => `<svg viewBox="0 0 64 64" aria-hidden="true">${ICONS[v] || ''}</svg>`;
+  function setPic(el, v) { el.className = el.className.replace(/\s*g-\w\w/g, '') + ' g-' + grp(v); el.innerHTML = pic(v); }
+  const DECK_SIZE = 12;
+
+  const $ = id => document.getElementById(id);
+  const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const grp = v => v.slice(-2);
+  const stem = v => v.slice(0, -2);
+  const form = (v, p) => stem(v) + END[grp(v)][p];
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const split = (v, p) => `<span class="g-${grp(v)}"><span class="stem">${esc(stem(v))}</span><span class="end">${esc(END[grp(v)][p])}</span></span>`;
+
+  // storage (optional)
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('presente.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('presente.' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  // speech
+  const canSpeak = 'speechSynthesis' in window;
+  let esVoice = null;
+  function pickVoice() {
+    try { const vs = speechSynthesis.getVoices(); esVoice = vs.find(v => v.lang === 'es-ES') || vs.find(v => v.lang && v.lang.startsWith('es')) || null; } catch (e) {}
+  }
+  if (canSpeak) { pickVoice(); try { speechSynthesis.onvoiceschanged = pickVoice; } catch (e) {} }
+  function speak(text) {
+    if (!canSpeak) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'es-ES'; u.rate = 0.8; if (esVoice) u.voice = esVoice;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  const SPEAKER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+  ['cSpeak', 'cSpeakInf'].forEach(id => { if (!canSpeak) $(id).hidden = true; else $(id).innerHTML = SPEAKER; });
+  const sayForm = (v, p) => speak(PERSONS[p].es.split(' / ')[0] + ' ' + form(v, p));
+  function speakSeq(texts) {
+    if (!canSpeak) return;
+    try {
+      speechSynthesis.cancel();
+      texts.forEach(t => { const u = new SpeechSynthesisUtterance(t); u.lang = 'es-ES'; u.rate = 0.75; if (esVoice) u.voice = esVoice; speechSynthesis.speak(u); });
+    } catch (e) {}
+  }
+
+  // ---------- 20 ГЛАГОЛОВ ----------
+  let selVerb = 'hablar';
+  function renderGallery() {
+    $('gallery').innerHTML = VERBS.map(([v, ru]) =>
+      `<button class="vcard g-${grp(v)}" data-v="${v}" aria-pressed="${v === selVerb}"><div class="pic sm g-${grp(v)}">${pic(v)}</div><b><span class="stem">${esc(stem(v))}</span><span class="end">${grp(v)}</span></b><span>${esc(ru)}</span></button>`
+    ).join('');
+  }
+  function renderConj() {
+    const v = selVerb, g = grp(v), ru = VERBS.find(x => x[0] === v)[1];
+    const items = PERSONS.map((p, i) => `
+      <div class="conj-item">
+        <div class="who"><b>${esc(p.es)}</b><span>${esc(p.ru)}</span></div>
+        <div class="form">${split(v, i)}</div>
+        ${canSpeak ? `<button class="speak sm" data-say="${i}" aria-label="Послушать">${SPEAKER}</button>` : ''}
+      </div>`).join('');
+    $('conj').className = 'box conj g-' + g;
+    $('conj').innerHTML = `
+      <div class="conj-head">
+        <div class="pic g-${g}">${pic(v)}</div>
+        <div><h2><span class="stem">${esc(stem(v))}</span><span class="end">${g}</span></h2><p>${esc(ru)}</p></div>
+        ${canSpeak ? `<button class="btn" id="sayAll">${SPEAKER}Слушать все формы</button>` : ''}
+      </div>
+      <div class="conj-list">${items}</div>`;
+  }
+  $('gallery').addEventListener('click', e => {
+    const b = e.target.closest('[data-v]'); if (!b) return;
+    selVerb = b.dataset.v; renderGallery(); renderConj(); speak(selVerb);
+    $('conj').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  $('conj').addEventListener('click', e => {
+    const s = e.target.closest('[data-say]');
+    if (s) { sayForm(selVerb, +s.dataset.say); return; }
+    if (e.target.closest('#sayAll')) speakSeq([selVerb].concat(PERSONS.map((p, i) => p.es.split(' / ')[0] + ' ' + form(selVerb, i))));
+  });
+  renderGallery(); renderConj();
+
+  // text size
+  let scale = store.get('scale', 1);
+  const applyScale = () => document.documentElement.style.setProperty('--scale', scale);
+  applyScale();
+  $('bigger').onclick = () => { scale = Math.min(1.5, +(scale + 0.1).toFixed(1)); applyScale(); store.set('scale', scale); };
+  $('smaller').onclick = () => { scale = Math.max(0.8, +(scale - 0.1).toFixed(1)); applyScale(); store.set('scale', scale); };
+
+  // tabs
+  let activeTab = 'scheme';
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+    activeTab = t.dataset.tab;
+    document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', String(x === t)));
+    ['scheme', 'verbs', 'cards', 'build'].forEach(id => $(id).hidden = id !== activeTab);
+  }));
+
+  // scheme table
+  const sample = ['hablar', 'comer', 'vivir'];
+  // ударение: в nosotros/vosotros — первая гласная окончания, иначе — последняя гласная основы
+  function splitStress(v, p) {
+    const st = stem(v), e = END[grp(v)][p], mark = c => `<i class="st">${c}</i>`;
+    if (p === 3 || p === 4) return `<span class="g-${grp(v)}"><span class="stem">${esc(st)}</span><span class="end">${mark(e[0])}${esc(e.slice(1))}</span></span>`;
+    let k = -1; for (let j = st.length - 1; j >= 0; j--) if ('aeiouáéíóú'.includes(st[j])) { k = j; break; }
+    const stHtml = k < 0 ? esc(st) : esc(st.slice(0, k)) + mark(st[k]) + esc(st.slice(k + 1));
+    return `<span class="g-${grp(v)}"><span class="stem">${stHtml}</span><span class="end">${esc(e)}</span></span>`;
+  }
+  $('schemeBody').innerHTML = PERSONS.map((p, i) => {
+    const cells = sample.map(v => {
+      const diff = grp(v) === 'ir' && (i === 3 || i === 4) ? ' diff' : '';
+      return `<td class="cell${diff}" tabindex="0" data-v="${v}" data-p="${i}">${splitStress(v, i)}</td>`;
+    }).join('');
+    return `<tr><td><b>${esc(p.es)}</b><span class="ru">${esc(p.ru)}</span></td>${cells}</tr>`;
+  }).join('');
+  $('schemeBody').addEventListener('click', e => { const c = e.target.closest('.cell'); if (c) sayForm(c.dataset.v, +c.dataset.p); });
+  $('schemeBody').addEventListener('keydown', e => { const c = e.target.closest('.cell'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); sayForm(c.dataset.v, +c.dataset.p); } });
+
+  // shared filters
+  const filters = store.get('filters', { ar: true, er: false, ir: false, vos: true });
+  function renderFilters() {
+    document.querySelectorAll('[data-filters]').forEach(box => {
+      const which = box.dataset.filters;
+      box.innerHTML = `
+        <button class="chip c-ar" data-f="ar" aria-pressed="${filters.ar}">-ar</button>
+        <button class="chip c-er" data-f="er" aria-pressed="${filters.er}">-er</button>
+        <button class="chip c-ir" data-f="ir" aria-pressed="${filters.ir}">-ir</button>
+        <button class="chip c-plain" data-f="vos" aria-pressed="${filters.vos}">vosotros</button>
+        <span class="spacer"></span>
+        <button class="btn ghost" data-new="${which}">Перемешать</button>`;
+    });
+  }
+  document.addEventListener('click', e => {
+    const f = e.target.closest('[data-f]');
+    if (f) {
+      const k = f.dataset.f;
+      if (k !== 'vos' && filters[k] && !['ar', 'er', 'ir'].some(g => g !== k && filters[g])) return; // keep at least one group
+      filters[k] = !filters[k]; store.set('filters', filters); renderFilters();
+      newCards(); newBuild(); return;
+    }
+    const n = e.target.closest('[data-new]');
+    if (n) { n.dataset.new === 'cards' ? newCards() : newBuild(); }
+  });
+
+  function makeDeck() {
+    const persons = [0, 1, 2, 3, 4, 5].filter(p => filters.vos || p !== 4);
+    const all = [];
+    VERBS.forEach(([v, ru]) => { if (filters[grp(v)]) persons.forEach(p => all.push({ v, ru, p })); });
+    // не больше двух карточек на один глагол, чтобы было разнообразие
+    const count = {}; const out = [];
+    for (const c of shuffle(all)) { count[c.v] = (count[c.v] || 0) + 1; if (count[c.v] <= 2) out.push(c); if (out.length >= DECK_SIZE) break; }
+    return out;
+  }
+
+  // ---------- КАРТОЧКИ ----------
+  let cQueue = [], cTotal = 0, cKnown = 0, cHardSet = [], cFlipped = false;
+  function newCards(deck) {
+    cQueue = deck || makeDeck(); cTotal = cQueue.length; cKnown = 0; cHardSet = [];
+    renderCard();
+  }
+  function renderCard() {
+    const done = cQueue.length === 0;
+    $('cFront').hidden = done; $('cBack').hidden = true; $('cDone').hidden = !done;
+    $('cActions').hidden = done;
+    $('cProg').textContent = `${Math.min(cKnown + 1, cTotal)} / ${cTotal}`;
+    $('cKnow').textContent = `знаю: ${cKnown}`;
+    $('cBar').style.width = (cTotal ? cKnown / cTotal * 100 : 0) + '%';
+    $('cBox').className = 'box flash';
+    if (done) {
+      $('cDoneScore').textContent = `${cTotal - cHardSet.length} / ${cTotal}`;
+      $('cHard').hidden = cHardSet.length === 0;
+      return;
+    }
+    const c = cQueue[0]; const g = grp(c.v);
+    cFlipped = false;
+    $('cBox').classList.add('g-' + g);
+    setPic($('cPic'), c.v); setPic($('cPic2'), c.v);
+    $('cPerson').textContent = $('cPerson2').textContent = PERSONS[c.p].es;
+    $('cPersonRu').textContent = $('cPersonRu2').textContent = PERSONS[c.p].ru;
+    $('cVerb').innerHTML = `<span class="g-${g}"><span class="stem">${esc(stem(c.v))}</span><span class="sep">|</span><span class="end">${g}</span></span>`;
+    $('cMeaning').textContent = c.ru;
+    $('cAnswer').innerHTML = split(c.v, c.p);
+    $('cRule').innerHTML = `<b>-${g}</b> · ${esc(PERSONS[c.p].es.split(' / ')[0])} → <b>-${esc(END[g][c.p])}</b>`;
+    $('cShow').hidden = false; $('cAgain').hidden = true; $('cKnowBtn').hidden = true;
+  }
+  function flip() {
+    if (!cQueue.length || cFlipped) return;
+    cFlipped = true;
+    $('cFront').hidden = true; $('cBack').hidden = false;
+    $('cShow').hidden = true; $('cAgain').hidden = false; $('cKnowBtn').hidden = false;
+    const c = cQueue[0]; sayForm(c.v, c.p);
+  }
+  function answer(knew) {
+    if (!cFlipped) return;
+    const c = cQueue.shift();
+    if (knew) cKnown++;
+    else {
+      if (!cHardSet.includes(c)) cHardSet.push(c);
+      cQueue.splice(Math.min(3, cQueue.length), 0, c); // вернётся через 3 карточки
+    }
+    renderCard();
+  }
+  $('cShow').onclick = flip;
+  $('cAgain').onclick = () => answer(false);
+  $('cKnowBtn').onclick = () => answer(true);
+  $('cSpeak').onclick = () => { const c = cQueue[0]; if (c) sayForm(c.v, c.p); };
+  $('cSpeakInf').onclick = () => { const c = cQueue[0]; if (c) speak(c.v); };
+  $('cNew').onclick = () => newCards();
+  $('cHard').onclick = () => newCards(shuffle(cHardSet.slice()));
+
+  // ---------- СОБЕРИ СЛОВО ----------
+  let bDeck = [], bIdx = 0, bFirst = 0, bMissed = false, bDoneCard = false;
+  function newBuild() { bDeck = makeDeck(); bIdx = 0; bFirst = 0; renderBuild(); }
+  function renderBuild() {
+    const done = bIdx >= bDeck.length;
+    $('bTask').hidden = done; $('bDone').hidden = !done;
+    $('bProg').textContent = `${Math.min(bIdx + 1, bDeck.length)} / ${bDeck.length}`;
+    $('bScore').textContent = `с первого раза: ${bFirst}`;
+    $('bBar').style.width = (bDeck.length ? bIdx / bDeck.length * 100 : 0) + '%';
+    $('bBox').className = 'box flash';
+    if (done) { $('bDoneScore').textContent = `${bFirst} / ${bDeck.length}`; return; }
+    const c = bDeck[bIdx]; const g = grp(c.v);
+    bMissed = false; bDoneCard = false;
+    $('bBox').classList.add('g-' + g);
+    setPic($('bPic'), c.v);
+    $('bPerson').textContent = PERSONS[c.p].es;
+    $('bPersonRu').textContent = PERSONS[c.p].ru;
+    $('bMeaning').innerHTML = `<span class="g-${g}">${esc(stem(c.v))}<span class="end">${g}</span></span> · ${esc(c.ru)}`;
+    $('bWord').innerHTML = `<span class="stem">${esc(stem(c.v))}</span><span class="slot">&nbsp;</span>`;
+    const opts = END[g].filter((e, i) => filters.vos || i !== 4);
+    $('bEndings').innerHTML = opts.map((e, i) => `<button data-e="${e}">-${e}</button>`).join('');
+    $('bFeedback').textContent = ''; $('bFeedback').className = 'feedback';
+    $('bNext').hidden = true;
+  }
+  function choose(btn) {
+    if (bDoneCard || !btn || btn.disabled) return;
+    const c = bDeck[bIdx]; const g = grp(c.v); const right = END[g][c.p];
+    if (btn.dataset.e === right) {
+      bDoneCard = true;
+      btn.classList.add('right');
+      if (!bMissed) bFirst++;
+      $('bWord').innerHTML = `<span class="g-${g}"><span class="stem">${esc(stem(c.v))}</span><span class="end">${esc(right)}</span></span>`;
+      $('bFeedback').textContent = 'Верно!'; $('bFeedback').className = 'feedback ok';
+      $('bScore').textContent = `с первого раза: ${bFirst}`;
+      $('bNext').hidden = false; $('bNext').focus();
+      sayForm(c.v, c.p);
+    } else {
+      bMissed = true;
+      btn.classList.add('wrong'); btn.disabled = true;
+      btn.classList.remove('nudge'); void btn.offsetWidth; btn.classList.add('nudge');
+      $('bFeedback').textContent = `Подсказка: -${g} · ${PERSONS[c.p].es.split(' / ')[0]} → -${right.length > 1 ? right[0] + '…' : '?'}`;
+      $('bFeedback').className = 'feedback no';
+    }
+  }
+  $('bEndings').addEventListener('click', e => choose(e.target.closest('button')));
+  $('bNext').onclick = () => { bIdx++; renderBuild(); };
+  $('bNew').onclick = newBuild;
+
+  // keyboard
+  document.addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('input, textarea')) return;
+    if (activeTab === 'cards') {
+      if (e.key === ' ' && !cFlipped) { e.preventDefault(); flip(); }
+      else if (e.key === 'ArrowLeft') answer(false);
+      else if (e.key === 'ArrowRight') answer(true);
+    } else if (activeTab === 'build') {
+      if (/^[1-6]$/.test(e.key)) { const b = $('bEndings').children[+e.key - 1]; if (b) choose(b); }
+      else if (e.key === 'Enter' && bDoneCard && document.activeElement !== $('bNext')) { bIdx++; renderBuild(); }
+    }
+  });
+
+  renderFilters(); newCards(); newBuild();
+})();
+</script>
+</body>
+</html>
